@@ -8834,17 +8834,38 @@ function object1Max() = [118.905, 118.912, 85.985];
 // Every opening has a pointed/angled top (>= 45 deg), so it prints without supports.
 faces = 1;          // number of faces spaced evenly around the shell
 face_angle = -90;   // where the first face sits (-90 = towards -Y)
-face_scale = 1.3;   // face size multiplier
+face_scale = 1.0;   // face size multiplier
 
 module face2d() {
-    // eyes: upward-pointing triangles
-    for (sx = [-1, 1])
-        translate([sx * 30, 30]) polygon([[-9, 0], [9, 0], [sx * -2, 17]]);
-    // nose: small upward triangle
-    translate([0, 26]) polygon([[-5, 0], [5, 0], [0, 9]]);
-    // mouth: flat bottom, zig-zag teeth along the top
-    polygon([[-38, 9], [38, 9], [38, 20], [30, 14], [22, 22], [14, 14], [7, 22],
-             [0, 14], [-7, 22], [-14, 14], [-22, 22], [-30, 14], [-38, 20]]);
+    // Classic jack-o'-lantern face matching pumpkin image
+    //
+    // Eyes: angled triangles (slant inward at top for menacing look)
+    // Both apex-up = zero supports needed
+    translate([-23, 32]) polygon([[-11, 0], [13, 0], [4, 17]]);   // left eye
+    translate([ 23, 32]) polygon([[-13, 0], [11, 0], [-4, 17]]);  // right eye
+    //
+    // Nose: classic upward triangle
+    translate([0, 22]) polygon([[-6, 0], [6, 0], [0, 11]]);
+    //
+    // Mouth: wide curved grin.
+    //   - Top edge has 4 teeth pointing DOWN separated by V-notches (V-notch bottoms
+    //     are the only bridging spans, ~9 mm each — easily printed without support).
+    //   - Bottom edge has 3 small triangular teeth pointing UP (self-supporting).
+    polygon([
+        // bottom edge, left to right — 3 upward teeth
+        [-32, 0],
+        [-24, 8], [-16, 1],
+        [ -6, 8], [  6, 1],
+        [ 16, 8], [ 24, 1],
+        [ 32, 0],
+        // right side
+        [32, 20],
+        // top edge right to left — 4 downward teeth; V-notches in between
+        [24, 14], [16, 20],
+        [ 8, 14], [  0, 20],
+        [-8, 14], [-16, 20],
+        [-24, 14], [-32, 20]
+    ]);
 }
 
 module face_cutter() {
