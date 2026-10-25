@@ -8830,7 +8830,6 @@ faces=[[0,1,2],[3,4,5],[6,7,8],
 function object1Min() = [-118.905, -118.912, 0.000];
 function object1Max() = [118.905, 118.912, 85.985];
 
-object1(1);
 // ---- Halloween jack-o'-lantern face (cut through the wall, no supports) ----
 // Every opening has a pointed/angled top (>= 45 deg), so it prints without supports.
 faces = 1;          // number of faces spaced evenly around the shell
