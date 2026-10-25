@@ -8834,6 +8834,7 @@ function object1Max() = [118.905, 118.912, 85.985];
 // Every opening has a pointed/angled top (>= 45 deg), so it prints without supports.
 faces = 1;          // number of faces spaced evenly around the shell
 face_angle = -90;   // where the first face sits (-90 = towards -Y)
+face_scale = 1.3;   // face size multiplier
 
 module face2d() {
     // eyes: upward-pointing triangles
@@ -8848,12 +8849,17 @@ module face2d() {
 
 module face_cutter() {
     // extrude the 2D face along -Y through the wall (stops well before the far wall)
-    translate([0, -70, 0]) rotate([90, 0, 0]) linear_extrude(height = 70) face2d();
+    translate([0, -70, 0]) rotate([90, 0, 0]) linear_extrude(height = 70)
+        translate([0, 9]) scale(face_scale) translate([0, -9]) face2d();
 }
 
 // ---- Bats and stars around the top (roof edges kept at >= 45 deg) ----
-deco_count = 8;     // bats/stars around the top, alternating
-deco_z = 68;        // height of their centres
+deco_count = 12;    // bats/stars around the top, alternating
+deco_z = 70;        // height of their centres
+spark_count = 12;   // small stars in a second row above, offset between the big ones
+spark_z = 78;
+mid_count = 8;      // small bats around the middle (skipped near the face)
+mid_z = 30;
 
 module bat2d() {
     half = [[0, 6], [2, 9], [3, 5], [13, -5], [9, -4], [7, -7], [4, -4], [2, -8], [0, -5]];
@@ -8869,6 +8875,14 @@ module deco_cutter(i) {
         if (i % 2 == 0) bat2d(); else star2d();
 }
 
+module small_cutter(z, s, bat) {
+    translate([0, -70, z]) rotate([90, 0, 0]) linear_extrude(height = 70)
+        scale(s) if (bat) bat2d(); else star2d();
+}
+
+function near_face(a) = len([for (i = [0 : faces - 1])
+    if (abs(((a - face_angle - i * 360 / faces) % 360 + 540) % 360 - 180) < 45) 1]) > 0;
+
 // the original shape is open at the bottom, so add a floor to hold candy
 base_thickness = 3;
 
@@ -8879,6 +8893,11 @@ union() {
             rotate([0, 0, face_angle + 90 + i * 360 / faces]) face_cutter();
         for (i = [0 : deco_count - 1])
             rotate([0, 0, 90 + i * 360 / deco_count]) deco_cutter(i);
+        for (i = [0 : spark_count - 1])
+            rotate([0, 0, 90 + (i + 0.5) * 360 / spark_count]) small_cutter(spark_z, 0.5, false);
+        for (i = [0 : mid_count - 1])
+            if (!near_face(i * 360 / mid_count))
+                rotate([0, 0, 90 + i * 360 / mid_count]) small_cutter(mid_z, 0.7, true);
     }
     cylinder(r = 96, h = base_thickness, $fn = 120);
 }
