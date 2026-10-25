@@ -8862,8 +8862,11 @@ mid_count = 8;      // small bats around the middle (skipped near the face)
 mid_z = 30;
 
 module bat2d() {
-    half = [[0, 6], [2, 9], [3, 5], [13, -5], [9, -4], [7, -7], [4, -4], [2, -8], [0, -5]];
-    polygon(concat(half, [for (i = [len(half) - 2 : -1 : 1]) [-half[i][0], half[i][1]]]));
+    // wings raised in flight (steep top edges), scalloped trailing edge, ears, little feet
+    half = [[0, 7], [2.2, 11], [3.5, 6], [13, 16], [11, 3], [9, 6], [7.5, -1],
+            [5.5, 3], [4, -5], [2, -2], [1.5, -6], [0, -3]];
+    translate([0, -4])
+        polygon(concat(half, [for (i = [len(half) - 2 : -1 : 1]) [-half[i][0], half[i][1]]]));
 }
 
 module star2d() {
