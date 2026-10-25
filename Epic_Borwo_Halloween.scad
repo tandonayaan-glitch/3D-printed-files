@@ -8852,8 +8852,34 @@ module face_cutter() {
     translate([0, -70, 0]) rotate([90, 0, 0]) linear_extrude(height = 70) face2d();
 }
 
-difference() {
-    object1(1);
-    for (i = [0 : faces - 1])
-        rotate([0, 0, face_angle + 90 + i * 360 / faces]) face_cutter();
+// ---- Bats and stars around the top (roof edges kept at >= 45 deg) ----
+deco_count = 8;     // bats/stars around the top, alternating
+deco_z = 68;        // height of their centres
+
+module bat2d() {
+    half = [[0, 6], [2, 9], [3, 5], [13, -5], [9, -4], [7, -7], [4, -4], [2, -8], [0, -5]];
+    polygon(concat(half, [for (i = [len(half) - 2 : -1 : 1]) [-half[i][0], half[i][1]]]));
+}
+
+module star2d() {
+    polygon([[0, 9], [2.5, 2.5], [5, 0], [2.5, -2.5], [0, -9], [-2.5, -2.5], [-5, 0], [-2.5, 2.5]]);
+}
+
+module deco_cutter(i) {
+    translate([0, -70, deco_z]) rotate([90, 0, 0]) linear_extrude(height = 70)
+        if (i % 2 == 0) bat2d(); else star2d();
+}
+
+// the original shape is open at the bottom, so add a floor to hold candy
+base_thickness = 3;
+
+union() {
+    difference() {
+        object1(1);
+        for (i = [0 : faces - 1])
+            rotate([0, 0, face_angle + 90 + i * 360 / faces]) face_cutter();
+        for (i = [0 : deco_count - 1])
+            rotate([0, 0, 90 + i * 360 / deco_count]) deco_cutter(i);
+    }
+    cylinder(r = 96, h = base_thickness, $fn = 120);
 }
