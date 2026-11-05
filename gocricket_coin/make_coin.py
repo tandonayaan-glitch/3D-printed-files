@@ -43,14 +43,14 @@ n = 120
 ang = np.linspace(0, 2*np.pi, n*12, endpoint=False)
 rr = R - 0.28 + 0.28*np.abs(np.sin(n/2*ang))  # reeded/scalloped edge
 disc = Polygon(np.c_[rr*np.cos(ang), rr*np.sin(ang)])
-rim = Point(0,0).buffer(15.3, 128).difference(Point(0,0).buffer(13.4, 128))
-bead = Point(0,0).buffer(9.9, 96).difference(Point(0,0).buffer(9.45, 96))
+rim = Point(0,0).buffer(15.3, 128).difference(Point(0,0).buffer(13.9, 128))
+bead = Point(0,0).buffer(9.0, 96).difference(Point(0,0).buffer(8.6, 96))
 
-top_txt = arc_text("GOCRICKET", 2.3, 10.5, top=True)
-bot_txt = arc_text("gocricket.in", 2.0, 12.5, top=False)
+top_txt = arc_text("GOCRICKET", 3.4, 10.3, top=True).buffer(0.12)
+bot_txt = arc_text("gocricket.in", 3.0, 12.9, top=False, gap=0.5).buffer(0.05)
 # bottom text: rotate so it reads left->right along the bottom
 bot_txt = affinity.rotate(bot_txt, 0)
-dots = unary_union([Point(-11.6,0).buffer(.45), Point(11.6,0).buffer(.45)])
+dots = unary_union([Point(-11.7,0).buffer(.5), Point(11.7,0).buffer(.5)])
 
 from shapely.geometry import LineString
 def bat(a):
