@@ -1,0 +1,16 @@
+{
+ "cols": 3,
+ "rows": 2,
+ "levels": 30,
+ "coins_per_level": 6,
+ "coins": 180,
+ "height": 176.0,
+ "width_x": 65.2,
+ "width_y": 134.6,
+ "faces": 2342292,
+ "volume_cm3": 778.5,
+ "watertight": true,
+ "pillars": 14,
+ "ribs": 13,
+ "pitch": 5.8
+}

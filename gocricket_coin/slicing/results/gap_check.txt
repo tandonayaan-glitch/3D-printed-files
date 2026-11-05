@@ -1,0 +1,6 @@
+pad_top length by level k=0..5 (min over coins): [610, 2097, 2097, 2097, 2097, 2097]  ... k=29: 2097
+pad_top         extrusion length inside each coin footprint (mm): min 610  mean 2062  max 2097   over 180 coin positions
+gap             extrusion length inside each coin footprint (mm): min 34  mean 34  max 34   over 180 coin positions
+coin_first      extrusion length inside each coin footprint (mm): min 630  mean 630  max 630   over 180 coin positions
+coin_last       extrusion length inside each coin footprint (mm): min 583  mean 583  max 583   over 180 coin positions
+gap_above_coin  extrusion length inside each coin footprint (mm): min 0  mean 0  max 0   over 180 coin positions

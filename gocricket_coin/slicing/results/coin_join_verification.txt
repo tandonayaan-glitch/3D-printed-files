@@ -1,0 +1,5 @@
+halves: heads 1125.9 mm3 (1.8 thick), tails 1125.9 mm3 (1.8 thick)
+union of halves  : 2251.8 mm3, bounds z 0.00..3.60
+joined coin file : 2251.8 mm3, bounds [31.989, 31.989, 3.6], watertight True
+symmetric difference joined vs halves-union: 0.002 mm3  (<<1 = identical)
+overlap between the two halves (must be 0, otherwise the coin would be thicker/doubled): -0.0000 mm3

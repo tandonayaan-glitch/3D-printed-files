@@ -1,0 +1,11 @@
+mesh: faces 2342292  watertight True  winding-consistent True
+bounds X 95.4..160.6  Y 60.7..195.3  Z 0.00..176.00   (A1 bed 0..256 x 0..256 x 256)
+separate bodies: 181  ->  1 structure (374.1 cm3) + 180 free-standing coins
+coin volume min/max 2246.5 / 2246.5 mm3 (joined 32x3.6 coin low-res = 2246.5)
+coin diameter 31.99..31.99   thickness 3.60..3.60
+distinct coin-bottom levels: 30  pitch set: [5.8]
+contact test (volume of overlap between structure and ALL coins when coins are nudged; must be 0):
+  vertical  +-0.19 mm: {'dz-0.19': 0.0, 'dz+0.19': 0.0}
+  lateral 0.9 mm, 12 directions: max overlap 0.0000 mm3
+  analytic: coin edge -> nearest pillar surface = 1.28 mm ; coin edge -> rib edge = 0.50 mm (ribs are at floor level, not coin level)
+  coins touching structure at rest: 0.0 mm3

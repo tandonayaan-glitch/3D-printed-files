@@ -1,0 +1,1 @@
+3x2x30: first modes Hz [np.float64(32.1), np.float64(36.5), np.float64(46.3), np.float64(65.4)]   (model mass 912 g)

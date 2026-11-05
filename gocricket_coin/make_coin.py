@@ -157,3 +157,18 @@ for nm, G in (("front", F), ("back", B)):
     thin = G.area - G.buffer(-0.2).buffer(0.2).area
     gaps = G.buffer(0.2).buffer(-0.2).area - G.area
     print(f"{nm}: thin-raised(<0.4mm) {thin:.2f} mm2, thin-gaps(<0.4mm) {gaps:.2f} mm2")
+
+# ---- Joined single coin (exact polygons, manifold) + reduced-resolution copy used for the multi-floor array
+def coin_manifold(simplify=0.0):
+    d, f, b = disc, F, Bm
+    if simplify:
+        d, f, b = d.simplify(simplify), f.simplify(simplify), b.simplify(simplify)
+    return extrude(d, RH - 0.01, 2*HALF - RH + 0.01) + extrude(f, 2*HALF - RH - 0.01, 2*HALF) + extrude(b, 0, RH + 0.01)
+
+def save_c(mm, name):
+    mesh = mm.to_mesh(); tt = trimesh.Trimesh(mesh.vert_properties[:, :3], mesh.tri_verts); tt.export(name); return tt
+
+tj = save_c(coin_manifold(), "gocricket_coin_joined.stl")
+tl = save_c(coin_manifold(0.04), "gocricket_coin_lowres.stl")
+print("joined coin: watertight", tj.is_watertight, "faces", len(tj.faces), "bounds", (tj.bounds[1]-tj.bounds[0]).round(3), "vol", round(tj.volume,1))
+print("lowres coin: watertight", tl.is_watertight, "faces", len(tl.faces), "vol", round(tl.volume,1))
