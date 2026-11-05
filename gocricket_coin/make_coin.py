@@ -44,7 +44,7 @@ ang = np.linspace(0, 2*np.pi, n*12, endpoint=False)
 rr = R - 0.28 + 0.28*np.abs(np.sin(n/2*ang))  # reeded/scalloped edge
 disc = Polygon(np.c_[rr*np.cos(ang), rr*np.sin(ang)])
 rim = Point(0,0).buffer(15.3, 128).difference(Point(0,0).buffer(13.9, 128))
-bead = Point(0,0).buffer(9.85, 96).difference(Point(0,0).buffer(9.45, 96))
+bead = Point(0,0).buffer(9.85, 96).difference(Point(0,0).buffer(9.25, 96))
 
 top_txt = arc_text("GOCRICKET", 3.4, 10.3, top=True).buffer(0.12)
 bot_txt = arc_text("gocricket.in", 3.0, 12.9, top=False, gap=0.5).buffer(0.05)
@@ -60,15 +60,15 @@ def bat(a):
     handle = box(-0.45,-7.4,0.45,-2.6)
     grip = box(-0.62,-7.4,0.62,-4.7).buffer(-0.3).buffer(0.3, 16)
     b = unary_union([blade, shoulder, handle, grip])
-    cuts = [LineString([(-0.7,y),(0.7,y)]).buffer(0.17, cap_style=2) for y in (-5.3,-6.0,-6.7)]
-    cuts.append(LineString([(-1.4,-1.0),(0,0.9),(1.4,-1.0)]).buffer(0.15))
+    cuts = [LineString([(-0.7,y),(0.7,y)]).buffer(0.225, cap_style=2) for y in (-5.5,-6.4)]
+    cuts.append(LineString([(-1.4,-1.0),(0,0.9),(1.4,-1.0)]).buffer(0.225))
     return affinity.rotate(b.difference(unary_union(cuts)), a, origin=(0,0))
 
 def seamed_ball(cx, cy, r):
     ball = Point(cx, cy).buffer(r, 64)
     seam = unary_union([
-        Point(cx-r-0.2, cy).buffer(r*0.92, 64).difference(Point(cx-r-0.55, cy).buffer(r*0.92, 64)),
-        Point(cx+r+0.2, cy).buffer(r*0.92, 64).difference(Point(cx+r+0.55, cy).buffer(r*0.92, 64))]).intersection(ball)
+        Point(cx-r-0.2, cy).buffer(r*0.92, 64).difference(Point(cx-r-0.7, cy).buffer(r*0.92, 64)),
+        Point(cx+r+0.2, cy).buffer(r*0.92, 64).difference(Point(cx+r+0.7, cy).buffer(r*0.92, 64))]).intersection(ball)
     return ball, ball.difference(seam)
 
 def label(txt, size, y_base, bold=0.05):
@@ -83,39 +83,41 @@ def glyphs_line(txt, size, gap=0.25):
     u = unary_union(parts)
     return affinity.translate(u, -(u.bounds[0]+u.bounds[2])/2, 0)
 
-SC = 0.78
+SC = 1.0; FCY = 1.6
 def front_center():
     bats = affinity.scale(unary_union([bat(28), bat(-28)]), SC, SC, origin=(0,0))
-    bats = affinity.translate(bats, 0, CY)
-    ball, ball_solid = seamed_ball(0, CY+0.55, 1.95)
+    bats = affinity.translate(bats, 0, FCY)
+    ball, ball_solid = seamed_ball(0, FCY+0.7, 2.2)
     return unary_union([bats.difference(ball.buffer(0.45)), ball_solid])
 
 def back_center(sw):
     stumps = []
-    for x in (-1.55, 0, 1.55):
+    sp = 1.7
+    for x in (-sp, 0, sp):
         stumps.append(box(x-sw/2, CY-4.4, x+sw/2, CY+4.4).buffer(-0.2).buffer(0.2, 12))
-    bails = [box(-2.5, CY+4.7, -0.3, CY+5.2), box(0.3, CY+4.7, 2.5, CY+5.2)]
+    bails = [box(-sp-sw/2-0.1, CY+4.7, -0.3, CY+5.2), box(0.3, CY+4.7, sp+sw/2+0.1, CY+5.2)]
     stumps_u = unary_union(stumps)
-    ball, ball_solid = seamed_ball(0, CY-2.7, 1.95)
+    ball, ball_solid = seamed_ball(0, CY-2.7, 2.2)
     return unary_union([stumps_u.difference(ball.buffer(0.45)), unary_union(bails), ball_solid])
 
 common = unary_union([rim, bead, top_txt, bot_txt, dots])
-def face(kind, sw=0.95):
+def face(kind, bw=0.6, sw=1.05):
     if kind == "front":
         return unary_union([common, front_center(), label("HEADS", 2.2, -7.9, 0.06)])
-    return unary_union([common, back_center(sw), label("TAILS", 2.2, -7.9, 0.06)])
+    bead_b = Point(0,0).buffer(9.85, 96).difference(Point(0,0).buffer(9.85-bw, 96))
+    return unary_union([rim, bead_b, top_txt, bot_txt, dots, back_center(sw), label("TAILS", 2.2, -7.9, 0.06)])
 
 # ---- balance: equal relief area on both faces (equal mass front/back)
-lo, hi = 0.6, 1.4
+lo, hi = 0.45, 1.4
 fa = face("front").intersection(disc).area
 for _ in range(40):
     mid = (lo+hi)/2
     if face("back", mid).intersection(disc).area < fa: lo = mid
     else: hi = mid
-sw = (lo+hi)/2
+bw = (lo+hi)/2; sw = 1.05
 F = face("front").intersection(disc)
-B = face("back", sw).intersection(disc)
-print("stump width", round(sw,3), "areas", F.area, B.area)
+B = face("back", bw).intersection(disc)
+print("back bead width", round(bw,3), "areas", F.area, B.area)
 
 # ---- left/right + up/down balance: centroid of total relief (back is mirrored in X when printed on the bed)
 Bm = affinity.scale(B, -1, 1, origin=(0,0))
@@ -131,14 +133,27 @@ def extrude(g, z0, z1):
         parts.append(mf.Manifold.extrude(cs, z1 - z0).translate([0, 0, z0]))
     return mf.Manifold.batch_boolean(parts, mf.OpType.Add)
 
-body = extrude(disc, 0.49, FIELD + 0.01 - 0.0)
-top_rel = extrude(F, FIELD - 0.01, TOP)
-bot_rel = extrude(Bm, 0.0, 0.51)
-# edge band full height both sides is provided by relief rim; body spans 0.5..3.0
-m = (body + top_rel + bot_rel).translate([128, 128, 0])
-mesh = m.to_mesh()
-t = trimesh.Trimesh(mesh.vert_properties[:, :3], mesh.tri_verts)
-t.export("gocricket_coin.stl")
-print(t.is_watertight, t.bounds, t.volume)
-com = t.center_mass - [128,128,0]
-print("centre of mass offset x,y,z-1.75:", com[0], com[1], com[2]-1.75)
+RH = 0.6   # relief height = 3 layers @0.2mm
+def save(mm, name):
+    mesh = mm.translate([128, 128, 0]).to_mesh()
+    t = trimesh.Trimesh(mesh.vert_properties[:, :3], mesh.tri_verts)
+    t.export(name); return t
+
+# Printable halves: each prints relief-up on the A1 bed, no supports, then glue flat faces together
+HALF = 1.8
+heads = extrude(disc, 0, HALF - RH + 0.01) + extrude(F, HALF - RH - 0.01, HALF)
+tails = extrude(disc, 0, HALF - RH + 0.01) + extrude(B, HALF - RH - 0.01, HALF)   # unmirrored: reads correctly from the printed face
+th = save(heads, "gocricket_heads_half.stl"); tt = save(tails, "gocricket_tails_half.stl")
+# Assembled reference (both faces in one solid, 3.6 mm) - used for the balance check
+asm = extrude(disc, RH - 0.01, 2*HALF - RH + 0.01) + extrude(F, 2*HALF - RH - 0.01, 2*HALF) + extrude(Bm, 0, RH + 0.01)
+t = save(asm, "gocricket_coin_assembled.stl")
+for n_, x in (("heads half", th), ("tails half", tt), ("assembled", t)):
+    print(n_, x.is_watertight, (x.bounds[1]-x.bounds[0]).round(3))
+com = t.center_mass - [128,128,HALF]
+print("assembled centre of mass offset x,y,z:", com.round(4))
+
+# ---- 0.4mm-nozzle feature check: report area lost by opening (thin raised bits) / closing (thin gaps)
+for nm, G in (("front", F), ("back", B)):
+    thin = G.area - G.buffer(-0.2).buffer(0.2).area
+    gaps = G.buffer(0.2).buffer(-0.2).area - G.area
+    print(f"{nm}: thin-raised(<0.4mm) {thin:.2f} mm2, thin-gaps(<0.4mm) {gaps:.2f} mm2")
