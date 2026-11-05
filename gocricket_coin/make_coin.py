@@ -52,16 +52,22 @@ bot_txt = arc_text("gocricket.in", 2.0, 12.5, top=False)
 bot_txt = affinity.rotate(bot_txt, 0)
 dots = unary_union([Point(-11.6,0).buffer(.45), Point(11.6,0).buffer(.45)])
 
+from shapely.geometry import LineString
 def bat(a):
-    blade = Polygon([(-1.25,-1.6),(1.25,-1.6),(1.45,5.0),(1.0,6.0),(-1.0,6.0),(-1.45,5.0)])
-    handle = box(-0.45,-7.2,0.45,-1.5)
-    grip = box(-0.7,-7.2,0.7,-5.0)
-    return affinity.rotate(unary_union([blade, handle, grip]), a, origin=(0,0))
-bats = unary_union([bat(30), bat(-30)])
-ball = Point(0, 1.0).buffer(2.4, 64)
+    blade = box(-1.4,-1.0,1.4,6.8).buffer(-0.5).buffer(0.5, 16)           # flat face, rounded toe
+    shoulder = Polygon([(-1.4,-1.0),(1.4,-1.0),(0.45,-2.7),(-0.45,-2.7)])
+    handle = box(-0.45,-7.4,0.45,-2.6)
+    grip = box(-0.62,-7.4,0.62,-4.7).buffer(-0.3).buffer(0.3, 16)
+    b = unary_union([blade, shoulder, handle, grip])
+    cuts = [LineString([(-0.7,y),(0.7,y)]).buffer(0.17, cap_style=2) for y in (-5.3,-6.0,-6.7)]
+    cuts.append(LineString([(-1.4,-1.0),(0,0.9),(1.4,-1.0)]).buffer(0.15))     # splice
+    b = b.difference(unary_union(cuts))
+    return affinity.rotate(b, a, origin=(0,0))
+bats = unary_union([bat(28), bat(-28)])
+ball = Point(0, 0.8).buffer(2.2, 64)
 seam = unary_union([
-    Point(-2.6,1.0).buffer(2.0,64).difference(Point(-2.95,1.0).buffer(2.0,64)),
-    Point(2.6,1.0).buffer(2.0,64).difference(Point(2.95,1.0).buffer(2.0,64))]).intersection(ball)
+    Point(-2.4,0.8).buffer(2.0,64).difference(Point(-2.75,0.8).buffer(2.0,64)),
+    Point(2.4,0.8).buffer(2.0,64).difference(Point(2.75,0.8).buffer(2.0,64))]).intersection(ball)
 ball_solid = ball.difference(seam)
 raised_top = unary_union([rim, bead, top_txt, bot_txt, dots, bats.difference(ball.buffer(0.5)), ball_solid])
 
