@@ -1,0 +1,7 @@
+layers 1229  top z 245.80  bbox (84.0, 85.0, 172.0, 171.0)
+max single-region unsupported width (mm): 36.0
+layers with an unsupported region wider than 6 mm: 37, wider than 10 mm: 37, wider than 14 mm: 37
+longest single unsupported region (any direction): 75.2 mm; layers with one > 12 mm: 103, > 16 mm: 103, > 20 mm: 103
+  z=6.8 [(33.6, 4944.7, 128.0, 128.0)]
+  z=13.4 [(33.6, 5006.6, 128.0, 128.0)]
+  z=20.0 [(33.6, 5279.0, 128.0, 128.0)]

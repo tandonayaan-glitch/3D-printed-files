@@ -1,0 +1,5 @@
+gap        extrusion inside each coin footprint (mm of line): min 34 mean 34 max 34  (148 coin positions)
+coin_first extrusion inside each coin footprint (mm of line): min 630 mean 630 max 630  (148 coin positions)
+coin_last  extrusion inside each coin footprint (mm of line): min 583 mean 583 max 583  (148 coin positions)
+headroom   extrusion inside each coin footprint (mm of line): min 0 mean 0 max 0  (148 coin positions)
+floor bridge layer (Z=6.6k+0.2, k=1..36): lines running across the tower (anchored on both beams): min 100%, mean 100% of extrusion length

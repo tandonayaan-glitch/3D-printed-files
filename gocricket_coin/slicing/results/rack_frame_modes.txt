@@ -1,0 +1,1 @@
+rack 2 towers x 37 levels: modes [(64.2, 'X-sway'), (70.7, 'Y-sway'), (73.9, 'Y-sway'), (175.4, 'X-sway'), (218.5, 'X-sway'), (264.9, 'X-sway')]  (model mass 825 g)

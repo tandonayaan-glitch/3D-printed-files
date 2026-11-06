@@ -1,0 +1,13 @@
+{
+ "towers": 2,
+ "coins_per_level": 4,
+ "levels": 37,
+ "coins": 148,
+ "pitch": 6.6,
+ "height": 245.81,
+ "width_x": 74.4,
+ "width_y": 73.0,
+ "faces": 1471846,
+ "volume_cm3": 727.9,
+ "watertight": true
+}
