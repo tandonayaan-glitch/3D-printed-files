@@ -93,6 +93,21 @@ sens_floor     = 0.84;          // plastic between seat and sensing face (3 laye
 min_wall       = 1.2;           // min wall between sensor shaft and plug surface
 arrow_depth    = 0.5;           // engraved lead-direction arrow on plug underside
 
+/* ------------------------- HOLLOWING (fast print) ------------------
+   Wall values are multiples of the 0.4 mm nozzle line width (5 lines = 2.0 mm).
+   Caps: big cavity open at the underside (no trapped void) under a solid roof.
+   Bails: closed teardrop-section void in the barrel only (spigots stay solid
+   round the magnet pockets). The teardrop apex points UP in print orientation,
+   so the void is self-supporting. Set hollow_* = false for solid parts.      */
+hollow_caps     = true;
+cap_wall        = 2.0;          // wall of the plug/head round the cavity
+cap_roof_z      = -6.0;         // cavity ceiling Z (seat floor is ~-3.35 -> ~2.6 mm roof)
+boss_wall       = 2.0;          // solid wall kept round the sensor shaft
+hollow_bail     = true;
+bail_void_r     = 4.6;          // teardrop circle radius (apex = 1.414 * r above axis)
+bail_void_margin= 5;            // keep this far from each barrel end (also the 45 deg taper)
+bail_void_min_wall = 1.6;       // min plastic between void apex and groove bottom
+
 /* ------------------------- PRINT PLATE ---------------------------- */
 bail_print_roll = 90;           // roll about bail axis so magnet holes print sideways
 plate_bail_x    = [-30, -60];
@@ -131,6 +146,9 @@ assert(shaft_reach(mag_x_long(top_d_small), top_d_small) + min_wall <= plug_r(to
 assert(shaft_reach(mag_x_long(top_d_big), top_d_big) + min_wall <= plug_r(top_d_big, pipe_wall_big),
        "34.9 sensor shaft too close to plug wall");
 assert(sens_ceil - (sens_d + sens_clear) > -head_h - plug_len + 3, "sensor pocket too deep for cap");
+assert(!hollow_caps || (seat_bot - seat_rest_gap) - cap_roof_z >= 2.0, "cap roof thinner than 2 mm under the seat floor");
+assert(!hollow_bail || groove_r - 1.4142*bail_void_r >= bail_void_min_wall, "bail void too close to groove bottom");
+assert(!hollow_bail || bail_void_r + 3 <= groove_r, "bail void too big");
 
 // ============================= BAIL =================================
 function arc_pts(cx, cy, r, a0, a1, n=14) =
@@ -170,7 +188,26 @@ module bail_pockets() {
     }
 }
 
-module bail() { difference() { bail_solid(); bail_pockets(); } }
+function td_apex() = 1.4142*bail_void_r;
+module td2d() { hull() { circle(r = bail_void_r, $fn = 48); translate([0, td_apex()]) circle(r = 0.01, $fn = 8); } }
+module void_slice(x, sc) {   // teardrop section; apex ends up pointing UP in the print orientation
+    translate([x, 0, 0]) rotate([0,90,0]) rotate([0,0,90 - bail_print_roll])
+        linear_extrude(0.01) scale([sc, sc]) td2d();
+}
+module bail_void() {         // closed void inside the barrel, 45 deg tapered ends
+    xa = spigot_long + bail_void_margin;
+    xb = spigot_long + barrel_len - bail_void_margin;
+    t  = td_apex();
+    hull() { void_slice(xa, 0.05); void_slice(xa + t, 1); void_slice(xb - t, 1); void_slice(xb, 0.05); }
+}
+
+module bail() {
+    difference() {
+        bail_solid();
+        bail_pockets();
+        if (hollow_bail) bail_void();
+    }
+}
 
 // ============================ STUMP TOP =============================
 module head_profile(Rh) {
@@ -221,6 +258,22 @@ module sensor_cut(xm, dir) {
             polygon([[dir*1.8, 0], [-dir*1.2, 1.3], [-dir*1.2, -1.3]]);
 }
 
+// hollow interior of the cap: open at the underside, solid roof, solid boss round the sensor shaft
+module shaft_boss(xm, dir) {
+    c = sens_clear; zb = -head_h - plug_len;
+    w = max(sens_w, sens_lead_w) + 2*c + 2*boss_wall;
+    L = sens_l + 2*c + sens_lead_room + 2*boss_wall;
+    x0 = (dir > 0) ? xm - sens_l/2 - c - boss_wall : xm - sens_l/2 - c - sens_lead_room - boss_wall;
+    translate([x0, -w/2, zb - 1]) cube([L, w, 40]);
+}
+module cap_cavity(d, wall, with_boss, xm = 0, dir = 1) {
+    zb = -head_h - plug_len; Rc = plug_r(d, wall) - cap_wall;
+    difference() {
+        translate([0,0,zb - 0.01]) cylinder(r = Rc, h = cap_roof_z - zb + 0.01, $fn = 96);
+        if (with_boss) shaft_boss(xm, dir);
+    }
+}
+
 module wire_bore() {
     if (plug_bore_d > 0)
         translate([0,0,-head_h - plug_len - 0.01]) cylinder(d = plug_bore_d, h = plug_bore_depth, $fn = 48);
@@ -237,10 +290,12 @@ module stump_top(d, wall, kind) {
             seat_channel(-Rh - 3, xt + seat_end_clear);          // bail 1 arrives from -X
             seat_channel(-(xt + seat_end_clear), Rh + 3);        // bail 2 arrives from +X
             // middle stump: NO Hall sensor, NO sensor pocket, NO wire channel
+            if (hollow_caps) cap_cavity(d, wall, false);
         } else {
             seat_channel(xo - seat_end_clear, Rh + 3);           // open towards the gap
             sensor_cut(mag_x_long(d), +1);                       // only outer stumps carry a sensor
-            wire_bore();
+            if (hollow_caps) cap_cavity(d, wall, true, mag_x_long(d), +1);
+            else wire_bore();
         }
     }
 }
