@@ -2,9 +2,10 @@
 // Cricket bails (fully round, lathe-turned) + six stump tops
 // with an A1344 (UA package) Hall-sensor pocket and 2x2 mm magnet pockets.   Units: mm
 //
-// PART = "plate"    2 bails + the ONE cover, print layout
+// PART = "plate"     2 bails + 3 covers (A1-sized layout, ~130 x 120 mm)
 //        "bail_1" | "bail_2"
-//        "cover"    off-stump cover: 34.9 mm head, 26 mm insert, sensor pocket
+//        "cover_28" | "cover_29" | "cover_30"   off-stump cover, 34.9 mm head,
+//                                               insert diameter 28 / 29 / 30 mm
 //
 // Wicket frame (assembly): X = wicket line, Z up, Z=0 = apex of stump-top dome.
 //   off stump x=0, middle x=spacing, leg x=2*spacing.
@@ -51,13 +52,10 @@ mag_tip_short  = 5;             // magnet centre from short-spigot tip
 pocket_extra   = 0.2;           // cavity height beyond mag_h (glue room)
 
 /* ------------------------- STUMP TOP SIZES ------------------------ */
-top_d_big      = 34.9;
-top_d_small    = 32.5;
-// Pipe wall is NOT given for these sizes. Assumed same wall as your earlier
-// 33.5 OD / 31.2 ID pipe (1.15 mm). CHECK and edit if the pipes differ:
-pipe_wall_big   = 1.15;
-pipe_wall_small = 1.15;
-plug_od         = 26;           // insert (plug) diameter for ALL six covers
+top_d_big      = 34.9;          // head diameter (fixed); INSERT diameters are plug_ods below
+plug_ods        = [28, 29, 30]; // insert (plug) diameters of the three covers
+cone_r          = 15.0;         // 45 deg lead-in cone under the head stops at this radius (must be < pipe bore radius)
+cavity_flat_r   = 5;            // flat part of the cavity ceiling (rest is a 45 deg cone = no bridging)
 plug_len        = 16;
 plug_chamfer    = 1.0;
 plug_bore_d     = 10;           // material-saving / wire bore from below (0 = none)
@@ -115,7 +113,6 @@ bail_void_min_wall = 1.6;       // min plastic between void apex and groove bott
 bail_print_roll = 90;           // roll about bail axis so magnet holes print sideways
 plate_bail_x    = [-30, -60];
 plate_big_x     = 25;           // column of 34.9 tops
-plate_small_x   = 65;           // column of 32.5 tops
 plate_y         = [-42, 0, 42];
 
 // ======================= DERIVED / CHECKS ===========================
@@ -128,7 +125,7 @@ pocket_depth = mag_lip_h + mag_h + pocket_extra;
 function x_tip(d)     = -d/2 + tip_inset;                       // long tip, off-cap local X
 function spacing(d)   = (wicket_width - d)/2;
 function x_tip_mid(d) = x_tip(d) + bail_len - spacing(d);       // short tip, middle-cap local X
-function plug_r(d, wall) = plug_od/2;   // d, wall kept for call compatibility
+function plug_r(d, pod) = pod/2;
 function mag_x_long(d)  = x_tip(d) + mag_tip_long;
 
 assert(abs(bail_len - bail_target) < 0.01, "bail length != 109.6");
@@ -136,7 +133,7 @@ assert(bail_len >= 109.5 && bail_len <= 111.13, "bail length outside 109.5..111.
 assert(axis_h > 0, "barrel too big for max_projection");
 assert(abs(groove_r - spigot_r - cove_r) < 1e-6, "cove_r must equal groove_r - spigot_r");
 assert(pocket_depth + 3 < spigot_r*2, "magnet pocket too deep for spigot");
-for (d = [top_d_big, top_d_small]) {
+for (d = [top_d_big]) {
     assert(x_tip(d) + spigot_long >= d/2 + 0.5, "barrel face collides with off stump");
     assert(x_tip(d) + spigot_long + barrel_len <= spacing(d) - d/2 - 0.5, "barrel collides with middle stump");
     assert(x_tip_mid(d) + seat_end_clear <= -min_ridge, "middle seats collide");
@@ -144,10 +141,8 @@ for (d = [top_d_big, top_d_small]) {
 // radial check of sensor shafts against plug wall (worst case = long-side shaft)
 function shaft_reach(xm, d) =
     sqrt(pow(abs(xm) + sens_l/2 + sens_clear, 2) + pow(max(sens_w, sens_lead_w)/2 + sens_clear, 2));
-assert(shaft_reach(mag_x_long(top_d_small), top_d_small) + min_wall <= plug_r(top_d_small, pipe_wall_small),
-       "32.5 sensor shaft too close to plug wall");
-assert(shaft_reach(mag_x_long(top_d_big), top_d_big) + min_wall <= plug_r(top_d_big, pipe_wall_big),
-       "34.9 sensor shaft too close to plug wall");
+for (pod = plug_ods)
+    assert(shaft_reach(mag_x_long(top_d_big), top_d_big) + min_wall <= pod/2, "sensor shaft too close to plug pod");
 assert(sens_ceil - (sens_d + sens_clear) > -head_h - plug_len + 3, "sensor pocket too deep for cap");
 assert(!hollow_caps || (seat_bot - seat_rest_gap) - cap_roof_z >= 2.0, "cap roof thinner than 2 mm under the seat floor");
 assert(!hollow_bail || groove_r - 1.4142*bail_void_r >= bail_void_min_wall, "bail void too close to groove bottom");
@@ -223,15 +218,19 @@ module head_profile(Rh) {
     polygon(concat([[0, -head_h], [Rh, -head_h]], ring, [[Rh, zs]], fil, dome));
 }
 
-module cap_body(d, wall) {
-    Rp = plug_r(d, wall);
+module cap_body(d, pod) {
+    Rp = plug_r(d, pod);
     rotate_extrude() head_profile(d/2);
+    // 45 deg cone under the head: inside the pipe bore, makes the head underside self-supporting
+    if (cone_r > Rp + 0.05)
+        translate([0,0,-head_h])
+            rotate_extrude() polygon([[Rp - 0.01, -(cone_r - Rp)], [cone_r, 0.01], [Rp - 0.01, 0.01]]);
     translate([0,0,-head_h - plug_len])
         rotate_extrude()
             polygon([[0,0],[Rp - plug_chamfer,0],[Rp,plug_chamfer],[Rp,plug_len+0.01],[0,plug_len+0.01]]);
 }
 
-// round cradle for the spigot, open upward, closed at the inner end by a wall
+// round cradle for the spigot, open upward, closed at the inner end by a pod
 module seat_channel(xa, xb) {
     rg = spigot_r + seat_clear; len = xb - xa;
     zg = axis_h + seat_clear - seat_rest_gap;   // spigot bottom rests just above the cradle floor
@@ -269,10 +268,13 @@ module shaft_boss(xm, dir) {
     x0 = (dir > 0) ? xm - sens_l/2 - c - boss_wall : xm - sens_l/2 - c - sens_lead_room - boss_wall;
     translate([x0, -w/2, zb - 1]) cube([L, w, 40]);
 }
-module cap_cavity(d, wall, with_boss, xm = 0, dir = 1) {
-    zb = -head_h - plug_len; Rc = plug_r(d, wall) - cap_wall;
+module cap_cavity(d, pod, with_boss, xm = 0, dir = 1) {
+    zb = -head_h - plug_len; Rc = plug_r(d, pod) - cap_wall;
     difference() {
-        translate([0,0,zb - 0.01]) cylinder(r = Rc, h = cap_roof_z - zb + 0.01, $fn = 96);
+        // wall cylinder, then a 45 deg cone up to a small flat ceiling (self-supporting)
+        rotate_extrude($fn = 96)
+            polygon([[0, zb - 0.01], [Rc, zb - 0.01], [Rc, cap_roof_z - (Rc - cavity_flat_r)],
+                     [cavity_flat_r, cap_roof_z], [0, cap_roof_z]]);
         if (with_boss) shaft_boss(xm, dir);
     }
 }
@@ -283,21 +285,21 @@ module wire_bore() {
 }
 
 // kind: "off" | "middle" | "leg"
-module stump_top(d, wall, kind) {
+module stump_top(d, pod, kind) {
     Rh = d/2;
     xo = x_tip(d); xt = x_tip_mid(d);
     mirror([kind == "leg" ? 1 : 0, 0, 0])
     difference() {
-        cap_body(d, wall);
+        cap_body(d, pod);
         if (kind == "middle") {
             seat_channel(-Rh - 3, xt + seat_end_clear);          // bail 1 arrives from -X
             seat_channel(-(xt + seat_end_clear), Rh + 3);        // bail 2 arrives from +X
             // middle stump: NO Hall sensor, NO sensor pocket, NO wire channel
-            if (hollow_caps) cap_cavity(d, wall, false);
+            if (hollow_caps) cap_cavity(d, pod, false);
         } else {
             seat_channel(xo - seat_end_clear, Rh + 3);           // open towards the gap
             sensor_cut(mag_x_long(d), +1);                       // only outer stumps carry a sensor
-            if (hollow_caps) cap_cavity(d, wall, true, mag_x_long(d), +1);
+            if (hollow_caps) cap_cavity(d, pod, true, mag_x_long(d), +1);
             else wire_bore();
         }
     }
@@ -323,10 +325,10 @@ module ghosts(d) {
         translate([p[0], 0, seat_bot + mag_lip_h]) magnet_ghost();
 }
 
-module assembly(d, wall) {
-    stump_top(d, wall, "off");
-    translate([sp(d),0,0]) stump_top(d, wall, "middle");
-    translate([2*sp(d),0,0]) stump_top(d, wall, "leg");
+module assembly(d, pod) {
+    stump_top(d, pod, "off");
+    translate([sp(d),0,0]) stump_top(d, pod, "middle");
+    translate([2*sp(d),0,0]) stump_top(d, pod, "leg");
     color("Tan") { bail1_world(d); bail2_world(d); }
     ghosts(d);
 }
@@ -336,38 +338,24 @@ module bail_print() {   // round bail, supports under it; axis along Y; lowest p
     translate([0, 0, barrel_r])
         rotate([0,0,90]) translate([-bail_len/2, 0, 0]) rotate([bail_print_roll, 0, 0]) bail();
 }
-module top_print(d, wall, kind) { translate([0,0,head_h + plug_len]) stump_top(d, wall, kind); }
+module top_print(d, pod, kind) { translate([0,0,head_h + plug_len]) stump_top(d, pod, kind); }
 
-module top_part(i) {
-    if (i == 1) top_print(top_d_big,   pipe_wall_big,   "off");
-    if (i == 2) top_print(top_d_big,   pipe_wall_big,   "middle");
-    if (i == 3) top_print(top_d_big,   pipe_wall_big,   "leg");
-    if (i == 4) top_print(top_d_small, pipe_wall_small, "off");
-    if (i == 5) top_print(top_d_small, pipe_wall_small, "middle");
-    if (i == 6) top_print(top_d_small, pipe_wall_small, "leg");
-}
+module cover(i) top_print(top_d_big, plug_ods[i], "off");   // off-stump cover, 34.9 head, insert = plug_ods[i]
 
-module cover() top_print(top_d_big, pipe_wall_big, "off");   // the ONE cover: off stump, 34.9 head, 26 insert
-
-module plate_old_unused() {
+module plate() {
     for (k = [0:1]) translate([plate_bail_x[k], 0, 0]) bail_print();
-    for (k = [0:2]) {
-        translate([plate_big_x,   plate_y[k], 0]) top_part(k + 1);
-        translate([plate_small_x, plate_y[k], 0]) top_part(k + 4);
-    }
+    for (k = [0:2]) translate([plate_big_x, plate_y[k], 0]) cover(k);
 }
 
 if      (PART == "plate")  plate();
 else if (PART == "bail_1" || PART == "bail_2") bail_print();
-else if (PART == "cover")  cover();
+else if (PART == "cover_28") cover(0);
+else if (PART == "cover_29") cover(1);
+else if (PART == "cover_30") cover(2);
 else echo("Unknown PART:", PART);
 
 echo(bail_len = bail_len, axis_h = axis_h, seat_bottom = seat_bot, sensor_ceiling = sens_ceil,
-     plug_od_big = 2*plug_r(top_d_big, pipe_wall_big), plug_od_small = 2*plug_r(top_d_small, pipe_wall_small),
-     spacing_big = spacing(top_d_big), spacing_small = spacing(top_d_small),
+     plug_ods = plug_ods,
+     spacing_big = spacing(top_d_big),
      x_tip_big = x_tip(top_d_big), x_tip_mid_big = x_tip_mid(top_d_big));
 
-module plate() {
-    for (k = [0:1]) translate([plate_bail_x[k], 0, 0]) bail_print();
-    translate([plate_big_x, 0, 0]) cover();
-}
