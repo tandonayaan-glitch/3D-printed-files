@@ -1,12 +1,10 @@
 // =====================================================================
 // Cricket bails (fully round, lathe-turned) + six stump tops
-// with A1334 Hall-sensor pockets and 2x2 mm magnet pockets.   Units: mm
+// with an A1344 (UA package) Hall-sensor pocket and 2x2 mm magnet pockets.   Units: mm
 //
-// PART = "plate"                       all 8 parts, print layout
+// PART = "plate"    2 bails + the ONE cover, print layout
 //        "bail_1" | "bail_2"
-//        "top_1" | "top_2" | "top_3"   34.9 mm : off / middle / leg
-//        "top_4" | "top_5" | "top_6"   32.5 mm : off / middle / leg
-//        "assembly_34_9" | "assembly_32_5"   preview only (ghost sensors/magnets)
+//        "cover"    off-stump cover: 34.9 mm head, 26 mm insert, sensor pocket
 //
 // Wicket frame (assembly): X = wicket line, Z up, Z=0 = apex of stump-top dome.
 //   off stump x=0, middle x=spacing, leg x=2*spacing.
@@ -43,7 +41,7 @@ mag_lip_h      = 0.5;           // retention lip at the pocket mouth; magnet sit
 mag_lip        = 0.10;          // lip overhang per side: mouth = mag_d - 2*lip = 1.8 mm.
                                 // Magnet is pressed past the lip (PETG flexes) and snaps in;
                                 // add a dab of CA/epoxy for permanent security.
-mag_tip_long   = 6;             // magnet centre from long-spigot tip
+mag_tip_long   = 7;             // magnet centre from long-spigot tip
 mag_tip_short  = 5;             // magnet centre from short-spigot tip
 // POLARITY: all four magnets go in with the SAME pole facing DOWN (towards the
 // sensor). Which pole (N or S) is a matter of your A1334 variant/switch
@@ -59,7 +57,7 @@ top_d_small    = 32.5;
 // 33.5 OD / 31.2 ID pipe (1.15 mm). CHECK and edit if the pipes differ:
 pipe_wall_big   = 1.15;
 pipe_wall_small = 1.15;
-plug_fit        = 0.40;         // plug dia = OD - 2*wall - plug_fit. Larger = looser
+plug_od         = 26;           // insert (plug) diameter for ALL six covers
 plug_len        = 16;
 plug_chamfer    = 1.0;
 plug_bore_d     = 10;           // material-saving / wire bore from below (0 = none)
@@ -80,16 +78,21 @@ seat_rest_gap  = 0.05;          // tiny gap so bail never fuses to the cradle (a
 tip_inset      = 3.0;           // long spigot tip sits this far inside outer rim
 min_ridge      = 1.0;
 
-/* ------------- A1334 SENSOR MODULE (TSOP1738-style, 3 pins) --------
-   PLACEHOLDER sizes - MEASURE YOUR MODULE and edit.                    */
-sens_w         = 5.0;           // body width  (across bail, Y)
-sens_l         = 6.0;           // body length (along bail, X) - lead end is at the stump-centre side
-sens_d         = 4.5;           // body depth, sensing face to back (Z)
-sens_clear     = 0.25;          // clearance per side
-sens_lead_room = 3.5;           // extra room beyond the body for the 3 leads/wires
-sens_lead_w    = 5.6;           // width of lead/wire channel (3 pins @2.54 = 5.08)
-sens_lead_top  = 1.0;           // lead channel stops this far below pocket ceiling
-sens_floor     = 0.84;          // plastic between seat and sensing face (3 layers @0.28)
+/* ------------- Allegro A1344 Hall sensor, UA 3-pin SIP package ------
+   Dimensions from Allegro UA-package drawings (A1321/A3144/A1318 series, same
+   package; A1344 datasheet itself not retrieved - verify with calipers):
+   body 4.09 (along leads) x 3.02 (wide) x 1.52 (thick), leads 1.27 mm pitch,
+   ~0.41 mm wide. Hall element is ~0.5 mm under the MARKED (printed) FACE.
+   The marked face goes UP, towards the bail magnet. Sensor is pushed in
+   from the underside of the cap, leads trailing down the shaft.          */
+sens_w         = 3.02;          // body width  (across bail, Y)
+sens_l         = 4.09;          // body length (along bail, X); leads leave the end nearest stump centre
+sens_d         = 1.52;          // body thickness (marked face to back, Z)
+sens_clear     = 0.15;          // clearance per side (snug push-fit; raise if too tight)
+sens_lead_room = 3.0;           // room beyond the body for the leads to bend down
+sens_lead_w    = 3.6;           // lead channel width (3 leads span 2.54 + 0.41)
+sens_lead_top  = 0.5;           // lead channel stops this far below the pocket ceiling
+sens_floor     = 0.56;          // plastic between seat and sensing face (2 layers @0.28)
 min_wall       = 1.2;           // min wall between sensor shaft and plug surface
 arrow_depth    = 0.5;           // engraved lead-direction arrow on plug underside
 
@@ -125,7 +128,7 @@ pocket_depth = mag_lip_h + mag_h + pocket_extra;
 function x_tip(d)     = -d/2 + tip_inset;                       // long tip, off-cap local X
 function spacing(d)   = (wicket_width - d)/2;
 function x_tip_mid(d) = x_tip(d) + bail_len - spacing(d);       // short tip, middle-cap local X
-function plug_r(d, wall) = (d - 2*wall - plug_fit)/2;
+function plug_r(d, wall) = plug_od/2;   // d, wall kept for call compatibility
 function mag_x_long(d)  = x_tip(d) + mag_tip_long;
 
 assert(abs(bail_len - bail_target) < 0.01, "bail length != 109.6");
@@ -301,10 +304,9 @@ module stump_top(d, wall, kind) {
 }
 
 // ======================= PREVIEW HELPERS ============================
-module sensor_ghost() {          // TSOP-style: body, lens dome on sensing face, 3 leads
+module sensor_ghost() {          // UA package: body + 3 leads, marked face at Z=0 (up)
     color("DimGray") translate([-sens_l/2, -sens_w/2, -sens_d]) cube([sens_l, sens_w, sens_d]);
-    color("Red") translate([0,0,0]) cylinder(d = 2, h = 0.4, $fn = 24);
-    for (y = [-2.54, 0, 2.54]) color("Silver") translate([sens_l/2, y - 0.25, -sens_d/2 - 0.25]) cube([sens_lead_room + 3, 0.5, 0.5]);
+    for (y = [-1.27, 0, 1.27]) color("Silver") translate([sens_l/2, y - 0.205, -sens_d/2 - 0.125]) cube([sens_lead_room, 0.41, 0.25]);
 }
 module magnet_ghost() color("Gold") cylinder(d = mag_d, h = mag_h, $fn = 24);
 
@@ -345,7 +347,9 @@ module top_part(i) {
     if (i == 6) top_print(top_d_small, pipe_wall_small, "leg");
 }
 
-module plate() {
+module cover() top_print(top_d_big, pipe_wall_big, "off");   // the ONE cover: off stump, 34.9 head, 26 insert
+
+module plate_old_unused() {
     for (k = [0:1]) translate([plate_bail_x[k], 0, 0]) bail_print();
     for (k = [0:2]) {
         translate([plate_big_x,   plate_y[k], 0]) top_part(k + 1);
@@ -355,17 +359,15 @@ module plate() {
 
 if      (PART == "plate")  plate();
 else if (PART == "bail_1" || PART == "bail_2") bail_print();
-else if (PART == "top_1") top_part(1);
-else if (PART == "top_2") top_part(2);
-else if (PART == "top_3") top_part(3);
-else if (PART == "top_4") top_part(4);
-else if (PART == "top_5") top_part(5);
-else if (PART == "top_6") top_part(6);
-else if (PART == "assembly_34_9") assembly(top_d_big, pipe_wall_big);
-else if (PART == "assembly_32_5") assembly(top_d_small, pipe_wall_small);
+else if (PART == "cover")  cover();
 else echo("Unknown PART:", PART);
 
 echo(bail_len = bail_len, axis_h = axis_h, seat_bottom = seat_bot, sensor_ceiling = sens_ceil,
      plug_od_big = 2*plug_r(top_d_big, pipe_wall_big), plug_od_small = 2*plug_r(top_d_small, pipe_wall_small),
      spacing_big = spacing(top_d_big), spacing_small = spacing(top_d_small),
      x_tip_big = x_tip(top_d_big), x_tip_mid_big = x_tip_mid(top_d_big));
+
+module plate() {
+    for (k = [0:1]) translate([plate_bail_x[k], 0, 0]) bail_print();
+    translate([plate_big_x, 0, 0]) cover();
+}
