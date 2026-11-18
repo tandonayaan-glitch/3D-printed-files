@@ -4,7 +4,7 @@
 //
 // PART = "plate"     2 bails + 3 covers (A1-sized layout, ~130 x 120 mm)
 //        "bail_1" | "bail_2"
-//        "cover_28" | "cover_29" | "cover_30"   off-stump cover, 34.9 mm head,
+//        "cover_1" | "cover_2" | "cover_3"   off-stump cover, 34.9 mm head,
 //                                               insert diameter 28 / 29 / 30 mm
 //
 // Wicket frame (assembly): X = wicket line, Z up, Z=0 = apex of stump-top dome.
@@ -53,7 +53,7 @@ pocket_extra   = 0.2;           // cavity height beyond mag_h (glue room)
 
 /* ------------------------- STUMP TOP SIZES ------------------------ */
 top_d_big      = 34.9;          // head diameter (fixed); INSERT diameters are plug_ods below
-plug_ods        = [28, 29, 30]; // insert (plug) diameters of the three covers
+plug_ods        = [28.2, 28.2, 28.2]; // insert diameter of each of the 3 covers
 cone_r          = 15.0;         // 45 deg lead-in cone under the head stops at this radius (must be < pipe bore radius)
 cavity_flat_r   = 5;            // flat part of the cavity ceiling (rest is a 45 deg cone = no bridging)
 plug_len        = 16;
@@ -86,11 +86,11 @@ min_ridge      = 1.0;
 sens_w         = 3.02;          // body width  (across bail, Y)
 sens_l         = 4.09;          // body length (along bail, X); leads leave the end nearest stump centre
 sens_d         = 1.52;          // body thickness (marked face to back, Z)
-sens_clear     = 0.15;          // clearance per side (snug push-fit; raise if too tight)
+sens_clear     = 0.20;          // clearance per side (FDM holes print slightly small)
 sens_lead_room = 3.0;           // room beyond the body for the leads to bend down
 sens_lead_w    = 3.6;           // lead channel width (3 leads span 2.54 + 0.41)
 sens_lead_top  = 0.5;           // lead channel stops this far below the pocket ceiling
-sens_floor     = 0.56;          // plastic between seat and sensing face (2 layers @0.28)
+sens_floor     = 0.84;          // plastic between seat and sensing face (3 layers @0.28, reliable bridge)
 min_wall       = 1.2;           // min wall between sensor shaft and plug surface
 arrow_depth    = 0.5;           // engraved lead-direction arrow on plug underside
 
@@ -349,9 +349,9 @@ module plate() {
 
 if      (PART == "plate")  plate();
 else if (PART == "bail_1" || PART == "bail_2") bail_print();
-else if (PART == "cover_28") cover(0);
-else if (PART == "cover_29") cover(1);
-else if (PART == "cover_30") cover(2);
+else if (PART == "cover_1") cover(0);
+else if (PART == "cover_2") cover(1);
+else if (PART == "cover_3") cover(2);
 else echo("Unknown PART:", PART);
 
 echo(bail_len = bail_len, axis_h = axis_h, seat_bottom = seat_bot, sensor_ceiling = sens_ceil,
